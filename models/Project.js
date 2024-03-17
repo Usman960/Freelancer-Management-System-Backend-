@@ -14,7 +14,15 @@ const projectSchema = new mongoose.Schema({
     skillTags: [String],
     status: { type: String, enum: ['notHired', 'pending', 'completed'], default: 'notHired' },
     rating: { type: Number, min: 1, max: 5 },
-    review: { type: String }
+    review: { type: String },
+    bids: [
+        {
+            freelancerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+            bidAmount: { type: Number, required: true },
+            message: { type: String }, // proposal of the freelancer
+            createdAt: { type: Date, default: Date.now }
+        }
+    ]
 });
 
 const Project = mongoose.model('Project', projectSchema);
