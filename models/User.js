@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true },
     password: { type: String, required: true },
     fullName: { type: String, required: true },
-    type: { type: String, enum: ['Super Admin', 'Admin', 'Freelancer', 'Seller'], required: true },
+    utype: { type: String, enum: ['Super Admin', 'Admin', 'Freelancer', 'Seller'], required: true },
     linkedAccounts: [String],
     skillTags: [String],
     portfolio:[{
@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema({
             ref: 'Project'
         }
     ],
-    category: String, // eg., data science, web dev, graphic design etc.
     position: String, // job title
     createdAt: { type: Date, default: Date.now }
 });

@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Manually create Super Admin in the database
 async function createSuperAdmin() {
-    const superAdmin = await User.findOne({type: 'Super Admin'});
+    const superAdmin = await User.findOne({utype: 'Super Admin'});
 
     try {
         if (!superAdmin) {
@@ -28,7 +28,7 @@ async function createSuperAdmin() {
             email: 'abdul.hafiz@gmail.com',
             fullName: 'Abdul Hafiz',
             password: hashedPassword,
-            type: 'Super Admin'
+            utype: 'Super Admin'
         });
 
         await newSuperAdmin.save();
@@ -43,12 +43,12 @@ async function createSuperAdmin() {
 
 createSuperAdmin();
 
-// const router = require('./routes/index');
-// app.use('/', router);
+const router = require('./routes/index');
+app.use('/', router);
 
-// app.use(function (req, res, next) {
-//     next(createError(404));
-// });
+app.use(function (req, res, next) {
+    next(createError(404));
+});
 
 const PORT = 5600;
 app.listen(PORT, console.log(`Server running port ${PORT}`));
