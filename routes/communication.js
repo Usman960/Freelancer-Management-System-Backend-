@@ -18,7 +18,7 @@ router.post("/send", async (req, res) => {
 // Endpoint for retrieving messages between two users
 router.get("/conversation", async (req, res) => {
   try {
-    const { senderId, receiverId } = req.query;
+    const { senderId, receiverId } = req.body;
     const messages = await Message.find({
       $or: [
         { senderId: senderId, receiverId: receiverId },

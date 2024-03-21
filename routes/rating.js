@@ -1,15 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const Project = require("./models/Project");
+const Project = require("../models/Project");
 
-// Endpoint to get project ratings and reviews
+// Endpoint to get project ratings and reviews of
 router.get("/project-ratings-reviews", async (req, res) => {
   try {
-    // Find projects that have ratings and reviews
     const projectsWithRatingsReviews = await Project.find({
-      rating: { $exists: true }, // Filter projects with ratings
-      review: { $exists: true }, // Filter projects with reviews
-    }).populate("sellerId", "username"); // Populate the sellerId field with the username
+      rating: { $exists: true },
+      review: { $exists: true },
+    }).populate("sellerId", "username");
 
     res.json(projectsWithRatingsReviews);
   } catch (error) {
@@ -21,7 +20,7 @@ router.get("/project-ratings-reviews", async (req, res) => {
 // Endpoint to get average rating of a freelancer
 router.get("/freelancer-average-rating/:freelancerId", async (req, res) => {
   try {
-    const freelancerId = req.params.freelancerId;
+    const freelancerId = req.body.freelancerId;
 
     // Find all projects associated with the freelancer
     const projects = await Project.find({ freelancerId: freelancerId });
