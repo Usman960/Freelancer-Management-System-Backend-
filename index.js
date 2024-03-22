@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: false }));
 
 (async () => {
     try {
-        await mongoose.connect("mongodb://0.0.0.0:27017/FreelancerManagementSystem")
+        await mongoose.connect("mongodb://localhost:27017/test")
         console.log('Connection has been established successfully.');
     } catch (error) {
         console.error('Unable to connect to the database:', error);
@@ -43,8 +43,8 @@ async function createSuperAdmin() {
 
 createSuperAdmin();
 
-// const router = require('./routes/index');
-// app.use('/', router);
+const router = require('./routes/index');
+app.use('/', router);
 
 // app.use(function (req, res, next) {
 //     next(createError(404));

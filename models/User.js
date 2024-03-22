@@ -24,7 +24,13 @@ const userSchema = new mongoose.Schema({
     ],
     category: String, // eg., data science, web dev, graphic design etc.
     position: String, // job title
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    notifications: [
+        {
+            message: { type: String, required: true }, // Notification message
+            createdAt: { type: Date, default: Date.now } // Notification creation date
+        }
+    ]
 });
 
 const User = mongoose.model('User', userSchema);
