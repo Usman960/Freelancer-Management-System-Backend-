@@ -18,37 +18,37 @@ mongodb: (async () => {
 })();
 
 // Manually create Super Admin in the database
-// async function createSuperAdmin() {
-//   const superAdmin = await User.findOne({ type: "Super Admin" });
+async function createSuperAdmin() {
+    const superAdmin = await User.findOne({utype: 'Super Admin'});
 
-//   try {
-//     if (!superAdmin) {
-//       const hashedPassword = await bcrypt.hash("abdhaf123", 5);
-//       const newSuperAdmin = new User({
-//         email: "abdul.hafiz@gmail.com",
-//         fullName: "Abdul Hafiz",
-//         password: hashedPassword,
-//         type: "Super Admin",
-//       });
+    try {
+        if (!superAdmin) {
+        const hashedPassword = await bcrypt.hash('abdhaf123', 5);
+        const newSuperAdmin = new User({
+            email: 'abdul.hafiz@gmail.com',
+            fullName: 'Abdul Hafiz',
+            password: hashedPassword,
+            utype: 'Super Admin'
+        });
 
-//       await newSuperAdmin.save();
-//       console.log("Super Admin created successfully");
-//     } else {
-//       console.log("Super Admin already exists");
-//     }
-//   } catch (error) {
-//     console.error("error creating Super Admin", error);
-//   }
-// }
+        await newSuperAdmin.save();
+        console.log("Super Admin created successfully");
+        } else {
+            console.log("Super Admin already exists");
+        }
+    } catch (error) {
+        console.error("error creating Super Admin", error);
+    }
+}
 
-// createSuperAdmin();
+createSuperAdmin();
 
-const router = require("./routes/index");
-app.use("/", router);
+const router = require('./routes/index');
+app.use('/', router);
 
-// app.use(function (req, res, next) {
-//   next(createError(404));
-// });
+app.use(function (req, res, next) {
+    next(createError(404));
+});
 
 const PORT = 5600;
 app.listen(PORT, console.log(`Server running port ${PORT}`));
