@@ -9,7 +9,7 @@ var router = express.Router();
 router.get("/ShowProjects", async (req, res) => {
     try {
        const page = req.query.page || 0; 
-       const ProjPerPage = 5;
+       const ProjPerPage = 3;
        const Allprojects =  await Projects.find().skip(page * ProjPerPage).limit(ProjPerPage);
 
          res.json({data: Allprojects })
@@ -22,6 +22,13 @@ router.get("/SearchProjects", async (req, res) => {
   try {
      const page = req.query.page || 0; 
      const ProjPerPage = 5;
+
+     if (!req.body.Search) {
+
+      const allProjects = await Projects.find({}).skip(page * ProjPerPage).limit(ProjPerPage);
+      
+      return res.json({ data: allProjects });
+    }
      const Search  = new RegExp(req.body.Search, 'i');
      
      const Allprojects =  await Projects.find({
@@ -31,6 +38,7 @@ router.get("/SearchProjects", async (req, res) => {
             { projectName:Search },
             { skillTags: Search },
             { status: Search }
+           
         ]
     }).skip(page * ProjPerPage).limit(ProjPerPage);
 
@@ -46,7 +54,6 @@ router.get("/filterProjects", async (req, res) => {
     const ProjPerPage = 5;
     const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
 
-    // Construct the filter object based on the provided query parameters
     const filter = {};
 
     if (rating) {
@@ -102,7 +109,12 @@ router.post("/Projectbid", async (req, res) => {
   try {
       const projectid = req.body.ProjectId;
       const newbid = req.body.bids;
-     
+      const freelancerId = req.body.freelancerId;
+
+     const existingbid =  await Projects.findOne({_id:projectid,"bids.freelancerId": freelancerId});
+     if (existingbid){
+     return res.status(400).json({error:"You already have a bid on this project!"})
+     }
        await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
 
        res.json({data: newbid})
@@ -114,9 +126,13 @@ router.post("/Projectbid", async (req, res) => {
 router.post("/ShowMyBids", async (req, res) => {
   try {
      const freelancerID = req.body.freelancerId;
-     const Allprojects =  await Projects.find({"bids.freelancerId": freelancerID});
+     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID},{projectName:1,_id:0,"bids.$":1});
+     
+     if(Allbids.length==0){
+      return res.json({error:"You have no bids at the moment"});
+     }
 
-       res.json({data: Allprojects })
+       res.json({data: Allbids})
   }catch (error) {
       console.error(error)
   
