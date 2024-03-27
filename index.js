@@ -8,14 +8,14 @@ var app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 //localhost:27017
-mongodb: (async () => {
-  try {
-    await mongoose.connect("mongodb://localhost:27017/freelancer");
-    console.log("Connection has been established successfully.");
-  } catch (error) {
-    console.error("Unable to connect to the database:", error);
-  }
-})();
+(async () => {
+    try {
+        await mongoose.connect("mongodb://0.0.0.0:27017/FreelancerManagementSystem")
+        console.log('Connection has been established successfully.');
+    } catch (error) {
+        console.error('Unable to connect to the database:', error);
+    }
+})()
 
 // Manually create Super Admin in the database
 async function createSuperAdmin() {

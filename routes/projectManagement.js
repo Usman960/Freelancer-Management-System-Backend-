@@ -17,12 +17,12 @@ router.post("/seller/projects", async (req, res) => {
       skillTags,
     } = req.body;
 
-    const seller = await user.findOne({ _id: sellerId, type: "Seller" });
+    const seller = await user.findOne({ _id: sellerId, utype: "Seller" });
     if (!seller) {
       return res.status(400).json({ error: "Invalid seller ID" });
     }
 
-    const newProject = await project.create({
+    await project.create({
       sellerId,
       projectName,
       projectDescription,
@@ -35,7 +35,7 @@ router.post("/seller/projects", async (req, res) => {
 
     console.log("Project created successfully");
 
-    res.json({ msg: "Project created successfully", project: newProject });
+    res.json({ msg: "Project created successfully"});
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -79,8 +79,7 @@ router.put("/seller/projects/:projectId", async (req, res) => {
     }
 
     res.json({
-      message: "Project updated successfully",
-      project: updatedProject,
+      message: "Project updated successfully"
     });
   } catch (error) {
     console.error(error);
