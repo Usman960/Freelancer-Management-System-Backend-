@@ -23,7 +23,13 @@ const userSchema = new mongoose.Schema({
         }
     ],
     position: String, // job title
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    notifications: [
+        {
+            message: { type: String, required: true }, // Notification message
+            createdAt: { type: Date, default: Date.now } // Notification creation date
+        }
+    ]
 });
 
 const User = mongoose.model('User', userSchema);

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 
+const projectRouter = require('./project');
 const projectManagementRouter = require("./projectManagement");
 const ratingRouter = require("./rating");
 const communicationRouter = require("./communication");
@@ -25,13 +26,9 @@ router.use(async (req, res, next) => {
 
 /******* below are all the routes that WILL pass through the middleware ********/
 
+router.use("/project", projectRouter);
 router.use("/projectManagement", projectManagementRouter);
 router.use("/rating", ratingRouter);
 router.use("/communication", communicationRouter);
-// router.use("/project", projectRouter);
-// router.use("/projectManagement", projectManagementRouter);
-// router.use("/projectTracking", projectTrackingRouter);
-// router.use("/rating", ratingRouter);
-// router.use("/communication", communicationRouter);
 router.use("/user", userRouter);
 module.exports = router;
