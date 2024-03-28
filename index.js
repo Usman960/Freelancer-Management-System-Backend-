@@ -1,7 +1,7 @@
 var createError = require("http-errors");
 var express = require("express");
 const mongoose = require("mongoose");
-// const bcrypt = require("bcrypt");
+const bcrypt = require("bcrypt");
 const User = require("./models/User");
 var app = express();
 
@@ -28,7 +28,8 @@ async function createSuperAdmin() {
             email: 'abdul.hafiz@gmail.com',
             fullName: 'Abdul Hafiz',
             password: hashedPassword,
-            utype: 'Super Admin'
+            utype: 'Super Admin',
+            isActive: true
         });
 
         await newSuperAdmin.save();

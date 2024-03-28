@@ -8,16 +8,37 @@ const helpers = require("../utils/helper")
 // Sign Up
 router.post("/signup", async (req, res) => {
     try {
-        const {email, password, utype, ...userData} = req.body
-        let user = await User.findOne({email});
-        if (user) res.json ({msg: "USER ALREADY EXISTS"})
-        if (req.body.utype != 'Freelancer' && req.body.utype != 'Seller') return res.json ({msg: "INVALID USER TYPE"})
-        await User.create({ ...req.body, password: await bcrypt.hash(password, 5) })
-        res.json ({msg: `${utype.toUpperCase()} ADDED`})
+        const { email, password, utype, ...userData } = req.body;
+        let user = await User.findOne({ email });
+        if (user) return res.json({ msg: "USER ALREADY EXISTS" });
+        if (utype !== 'Freelancer' && utype !== 'Seller') {
+            return res.json({ msg: "INVALID USER TYPE" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 5);
+        const newUser = await User.create({
+            email,
+            password: hashedPassword,
+            utype,
+            ...userData
+        });
+
+        const admins = await User.find({ utype: { $in: ["Super Admin", "Admin"] } });
+        const notificationMsg = `Request to add user ${newUser._id}`;
+
+        for (const admin of admins) {
+            await User.findByIdAndUpdate(admin._id, {
+                $push: { notifications: { message: notificationMsg } }
+            });
+        }
+
+        res.json({ msg: `${utype.toUpperCase()} ADDED` });
     } catch (error) {
-        console.error(console.error())
+        console.error(error);
+        res.status(500).json({ msg: "Internal Server Error" });
     }
-})
+});
+
 
 // Login
 router.post("/login", async (req, res) => {
@@ -27,6 +48,8 @@ router.post("/login", async (req, res) => {
         const user = await User.findOne({ email })
         if (!user) return res.json({ msg: "USER NOT FOUND" })
 
+        if (!user.isActive) return res.json({msg: "USER INACTIVE"});
+        
         const passwordCheck = await bcrypt.compare(password, user.password);
         if (!passwordCheck) return res.json({ msg: "WRONG PASSWORD" })
 
@@ -34,6 +57,7 @@ router.post("/login", async (req, res) => {
             email,
             createdAt: new Date(),
             utype: user.utype,
+            userId: user._id
         }, "MY_SECRET", { expiresIn: "1d" });
 
         res.json({
