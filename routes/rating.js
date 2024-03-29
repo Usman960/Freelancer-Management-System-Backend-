@@ -8,6 +8,7 @@ router.get("/project-ratings-reviews", async (req, res) => {
     const projectsWithRatingsReviews = await Project.find({
       rating: { $exists: true },
       review: { $exists: true },
+      isDeleted:false
     }).populate("sellerId", "username");
 
     res.json(projectsWithRatingsReviews);

@@ -10,7 +10,8 @@ router.get("/ShowProjects", async (req, res) => {
     try {
        const page = req.query.page || 0; 
        const ProjPerPage = 3;
-       const Allprojects =  await Projects.find().skip(page * ProjPerPage).limit(ProjPerPage);
+       const Allprojects =  await Projects.find({isDeleted:false},{isDeleted:0,_id:0}).populate({
+        path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
          res.json({data: Allprojects })
     }catch (error) {
@@ -25,7 +26,8 @@ router.get("/SearchProjects", async (req, res) => {
 
      if (!req.body.Search) {
 
-      const allProjects = await Projects.find({}).skip(page * ProjPerPage).limit(ProjPerPage);
+      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0,_id:0}).populate({
+        path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
       
       return res.json({ data: allProjects });
     }
@@ -39,8 +41,9 @@ router.get("/SearchProjects", async (req, res) => {
             { skillTags: Search },
             { status: Search }
            
-        ]
-    }).skip(page * ProjPerPage).limit(ProjPerPage);
+        ],isDeleted:false
+    },{_id:0,isDeleted:0}).populate({
+      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
        res.json({ data: Allprojects })
   } catch (error) {
@@ -82,9 +85,10 @@ router.get("/filterProjects", async (req, res) => {
       filter.skillTags = skillTags;
     }
 
-    const projects = await Projects.find(filter)
-      .skip(page * ProjPerPage)
-      .limit(ProjPerPage);
+    filter.isDeleted = false;
+
+    const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
+      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
     res.json({ data: projects });
   } catch (error) {
@@ -96,8 +100,9 @@ router.get("/filterProjects", async (req, res) => {
 router.get("/ShowProjectbyId", async (req, res) => {
   try {
       let Projectid = req.body.ProjectId;
-      const Project = await Projects.findOne({ _id: Projectid });
-      if (Project.length == 0) return res.json({ msg: "Project not Found" })
+      const Project = await Projects.findOne({ _id: Projectid ,isDeleted:false},{isDeleted:0,_id:0});
+      if (!Project || Project.isDeleted == true) return res.json({ msg: "Project not Found" });
+      
 
        res.json({data: Project})
   }catch (error) {
@@ -109,13 +114,15 @@ router.post("/Projectbid", async (req, res) => {
   try {
       const projectid = req.body.ProjectId;
       const newbid = req.body.bids;
-      const freelancerId = req.body.freelancerId;
+      const freelancerId = req.user.userId;
 
-     const existingbid =  await Projects.findOne({_id:projectid,"bids.freelancerId": freelancerId});
+     const existingbid =  await Projects.findOne({_id:projectid,"bids.freelancerId": freelancerId,isDeleted:false});
      if (existingbid){
      return res.status(400).json({error:"You already have a bid on this project!"})
      }
+      
        await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
+    
 
        res.json({data: newbid})
   }catch (error) {
@@ -125,8 +132,8 @@ router.post("/Projectbid", async (req, res) => {
 );
 router.post("/ShowMyBids", async (req, res) => {
   try {
-     const freelancerID = req.body.freelancerId;
-     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID},{projectName:1,_id:0,"bids.$":1});
+     const freelancerID = req.user.userId;
+     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID,isDeleted :false},{projectName:1,_id:0,"bids.$":1});
      
      if(Allbids.length==0){
       return res.json({error:"You have no bids at the moment"});
@@ -141,11 +148,12 @@ router.post("/ShowMyBids", async (req, res) => {
 router.post("/EditMyBid", async (req, res) => {
   try {
      const ProjectID = req.body.Projectid;
-     const freelancerID = req.body.freelancerID;
+     const freelancerID = req.user.userId;
      const { bidAmount,message } = req.body;
      console.log(bidAmount);
      console.log(ProjectID);
-     const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID});
+     console.log(freelancerID);
+     const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted : false});
      if (!project) {
       return res.status(404).json({ error: "No project found" });
   }
@@ -163,7 +171,8 @@ router.post("/EditMyBid", async (req, res) => {
   project.bids[index].message = message;
   }
 
- 
+  project.bids[index].UpdatedAt = new Date();
+  project.bids[index].Updatedby = req.user.userId;
   await project.save();
      
        res.json({message: " Bid Edited Successfully" })
@@ -176,9 +185,9 @@ router.post("/EditMyBid", async (req, res) => {
 router.post("/WithdrawBid", async (req, res) => {
   try {
      const ProjectID = req.body.Projectid;
-     const freelancerID = req.body.freelancerID;
+     const freelancerID = req.user.userId;
     
-     const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID});
+     const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted:false});
      
      if (!project) {
       return res.status(404).json({ error: "No Bid found" });
@@ -200,11 +209,11 @@ await project.save();
 }}
 );
 
-
+//Seller
 router.post("/ShowBidsbyProject", async (req, res) => {
   try {
      const ProjectID = req.body.Projectid;
-     const project = await Projects.findOne({_id: ProjectID});
+     const project = await Projects.findOne({_id: ProjectID,isDeleted:false,status:'notHired'});
      if (!project) {
       return res.status(404).json({ error: "No project found" });
   }  
@@ -220,7 +229,7 @@ router.post("/HireFreelancer", async (req, res) => {
   try {
     const ProjectID = req.body.Projectid;
     const freelancerID = req.body.freelancerID;
-    const project =  await Projects.findOne({_id:ProjectID});
+    const project =  await Projects.findOne({_id:ProjectID,isDeleted:false});
     if (!project) {
      return res.status(404).json({ error: "No project found" });
  }  

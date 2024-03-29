@@ -35,6 +35,17 @@ const projectSchema = new mongoose.Schema({
   },
   rating: { type: Number, min: 1, max: 5 },
   review: { type: String },
+  isDeleted:{type: Boolean, default:false},
+  Deletedby:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+  Updatedby:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"},
+
+  DeletedAt:{type:Date},
+  UpdatedAt:{type:Date},
   bids: [
     {
       freelancerId: {
@@ -45,6 +56,10 @@ const projectSchema = new mongoose.Schema({
       bidAmount: { type: Number, required: true },
       message: { type: String }, // proposal of the freelancer
       createdAt: { type: Date, default: Date.now },
+      Updatedby:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"},
+      UpdatedAt:{type:Date}
     },
   ],
 });

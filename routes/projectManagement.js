@@ -4,10 +4,9 @@ const project = require("../models/Project");
 const user = require("../models/User");
 
 // add a project
-router.post("/seller/projects", async (req, res) => {
+router.post("/seller/addproject", async (req, res) => {
   try {
     const {
-      sellerId,
       projectName,
       projectDescription,
       projectLength,
@@ -16,12 +15,11 @@ router.post("/seller/projects", async (req, res) => {
       projectType,
       skillTags,
     } = req.body;
-
+   const sellerId = req.user.userId;
     const seller = await user.findOne({ _id: sellerId, utype: "Seller" });
     if (!seller) {
-      return res.status(400).json({ error: "Invalid seller ID" });
+      return res.status(400).json({ error: "Please Log in as a Seller" });
     }
-
     await project.create({
       sellerId,
       projectName,
@@ -30,10 +28,9 @@ router.post("/seller/projects", async (req, res) => {
       skillLevel,
       price,
       projectType,
-      skillTags,
+      skillTags
     });
 
-    console.log("Project created successfully");
 
     res.json({ msg: "Project created successfully"});
   } catch (error) {
@@ -43,10 +40,9 @@ router.post("/seller/projects", async (req, res) => {
 });
 
 // update a project
-router.put("/seller/projects/:projectId", async (req, res) => {
+router.put("/seller/Updateprojects/:projectId", async (req, res) => {
   try {
     const projectId = req.params.projectId;
-    console.log(projectId);
     const {
       projectName,
       projectDescription,
@@ -74,9 +70,12 @@ router.put("/seller/projects/:projectId", async (req, res) => {
       { new: true }
     );
 
-    if (!updatedProject) {
+    if (!updatedProject || updatedProject.isDeleted == true) {
       return res.status(404).json({ error: "Project not found" });
     }
+    updatedProject.Updatedby = req.user.userId;
+    updatedProject.UpdatedAt = new Date();
+    await updatedProject.save();
 
     res.json({
       message: "Project updated successfully"
@@ -94,7 +93,7 @@ router.get("/seller/projects/:projectId", async (req, res) => {
 
     const projectInfo = await project.findById(projectId);
 
-    if (!projectInfo) {
+    if (!projectInfo || projectInfo.isDeleted == true) {
       return res.status(404).json({ error: "Project not found" });
     }
 
@@ -105,16 +104,20 @@ router.get("/seller/projects/:projectId", async (req, res) => {
   }
 });
 
-// delete project
-router.delete("/seller/projects/:projectId", async (req, res) => {
+
+router.post("/seller/DeleteProject/:projectId", async (req, res) => {
   try {
     const projectId = req.params.projectId;
 
-    const deletedProject = await project.findByIdAndDelete(projectId);
+    const deletedProject = await project.findById(projectId);
 
-    if (!deletedProject) {
+    if (!deletedProject || deletedProject.isDeleted == true) {
       return res.status(404).json({ error: "Project not found" });
     }
+   deletedProject.isDeleted = true;
+   deletedProject.Deletedby = req.user.userId;
+   deletedProject.DeletedAt = new Date();
+   await deletedProject.save();
 
     res.json({ message: "Project deleted successfully" });
   } catch (error) {
@@ -123,20 +126,6 @@ router.delete("/seller/projects/:projectId", async (req, res) => {
   }
 });
 
-// router.get("/projects/:projectId/bids", async (req, res) => {
-//   try {
-//     const projectId = req.params.projectId;
-//     // Fetch bids associated with the project ID
-//     const projectBids = await project
-//       .findById(projectId)
-//       .select("bids")
-//       .populate("bids");
 
-//     res.json(projectBids.bids);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// });
 
 module.exports = router;

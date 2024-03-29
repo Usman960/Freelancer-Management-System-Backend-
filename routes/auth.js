@@ -56,6 +56,7 @@ router.post("/login", async (req, res) => {
         const token = jwt.sign({
             email,
             createdAt: new Date(),
+            userId:user._id,
             utype: user.utype,
             userId: user._id
         }, "MY_SECRET", { expiresIn: "1d" });
