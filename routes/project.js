@@ -51,6 +51,7 @@ router.get("/SearchProjects", async (req, res) => {
     
   }
 });
+
 router.get("/filterProjects", async (req, res) => {
   try {
     const page = req.query.page || 0;
@@ -130,7 +131,7 @@ router.post("/Projectbid", async (req, res) => {
   
 }}
 );
-router.post("/ShowMyBids", async (req, res) => {
+router.get("/ShowMyBids", async (req, res) => {
   try {
      const freelancerID = req.user.userId;
      const Allbids =  await Projects.find({"bids.freelancerId": freelancerID,isDeleted :false},{projectName:1,_id:0,"bids.$":1});
@@ -147,12 +148,9 @@ router.post("/ShowMyBids", async (req, res) => {
 );
 router.post("/EditMyBid", async (req, res) => {
   try {
-     const ProjectID = req.body.Projectid;
+     const ProjectID = req.body.ProjectId;
      const freelancerID = req.user.userId;
      const { bidAmount,message } = req.body;
-     console.log(bidAmount);
-     console.log(ProjectID);
-     console.log(freelancerID);
      const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted : false});
      if (!project) {
       return res.status(404).json({ error: "No project found" });
@@ -184,7 +182,7 @@ router.post("/EditMyBid", async (req, res) => {
 
 router.post("/WithdrawBid", async (req, res) => {
   try {
-     const ProjectID = req.body.Projectid;
+     const ProjectID = req.body.ProjectId;
      const freelancerID = req.user.userId;
     
      const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted:false});
@@ -212,8 +210,8 @@ await project.save();
 //Seller
 router.post("/ShowBidsbyProject", async (req, res) => {
   try {
-     const ProjectID = req.body.Projectid;
-     const project = await Projects.findOne({_id: ProjectID,isDeleted:false,status:'notHired'});
+     const ProjectID = req.body.ProjectId;
+     const project = await Projects.findOne({_id: ProjectID,isDeleted:false});
      if (!project) {
       return res.status(404).json({ error: "No project found" });
   }  
@@ -227,8 +225,8 @@ router.post("/ShowBidsbyProject", async (req, res) => {
 
 router.post("/HireFreelancer", async (req, res) => {
   try {
-    const ProjectID = req.body.Projectid;
-    const freelancerID = req.body.freelancerID;
+    const ProjectID = req.body.ProjectId;
+    const freelancerID = req.body.freelancerId;
     const project =  await Projects.findOne({_id:ProjectID,isDeleted:false});
     if (!project) {
      return res.status(404).json({ error: "No project found" });

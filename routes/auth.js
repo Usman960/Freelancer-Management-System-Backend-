@@ -46,7 +46,7 @@ router.post("/login", async (req, res) => {
         const { email, password } = req.body
 
         const user = await User.findOne({ email })
-        if (!user) return res.json({ msg: "USER NOT FOUND" })
+        if (!user || user.isDeleted) return res.json({ msg: "USER NOT FOUND" })
 
         if (!user.isActive) return res.json({msg: "USER INACTIVE"});
         
