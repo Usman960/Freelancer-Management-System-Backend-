@@ -47,6 +47,8 @@ router.post("/login", async (req, res) => {
 
         const user = await User.findOne({ email })
         if (!user || user.isDeleted) return res.json({ msg: "USER NOT FOUND" })
+        console.log( user);
+       console.log( user.isActive);
 
         if (!user.isActive) return res.json({msg: "USER INACTIVE"});
         
@@ -62,7 +64,12 @@ router.post("/login", async (req, res) => {
         }, "MY_SECRET", { expiresIn: "1d" });
 
         res.json({
-            msg: "LOGGED IN", token
+            msg: "LOGGED IN", token , data:{fullName:user.fullName,
+                email:user.email,  position:user.position,linkedAccounts:user.linkedAccounts,skillTags:user.skillTags,
+                portfolio:user.portfolio , availability:user.availability,description:user.description,
+                projects:user.projects, notifications:user.notifications
+
+            }
         })
     } catch (error) {
         console.error(error)

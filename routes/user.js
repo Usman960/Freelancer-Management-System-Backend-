@@ -19,12 +19,14 @@ router.get("/viewProfile", async (req, res) => {
 router.post("/editProfile", async (req, res) => {
     try {
         const {email, utype, ...updatedFields} = req.body
-        let user = await User.findOne({email})
+        const userId = req.user.userId;
+        let user = await User.findOne({_id:userId})
         if (!user || user.isDeleted) return res.json({msg: "USER NOT FOUND"})
+        console.log(user)
 
-        if (req.user.utype == "Freelancer" || req.user.utype == "Seller") {
-            if (req.user.email != req.body.email) return res.json({msg: "NOT AUTHORIZED"})
-        }
+        // if (req.user.utype == "Freelancer" || req.user.utype == "Seller") {
+        //     if (req.user.email != req.body.email) return res.json({msg: "NOT AUTHORIZED"})
+        // }
 
         await User.findByIdAndUpdate(user._id, {updatedBy: req.user.userId, updatedAt: Date.now(), ...updatedFields})
         res.json({msg: `${utype.toUpperCase()} UPDATED`, data: user})
