@@ -18,16 +18,24 @@ router.get("/viewProfile", async (req, res) => {
 //edit Profile
 router.post("/editProfile", async (req, res) => {
     try {
-        const {email, utype, ...updatedFields} = req.body
-        let user = await User.findOne({email})
+        const {email, ...updatedFields} = req.body
+        const userId = req.user.userId;
+        const utype = req.user.utype;
+        let user = await User.findOne({_id:userId})
         if (!user || user.isDeleted) return res.json({msg: "USER NOT FOUND"})
+        console.log(email);
 
-        if (req.user.utype == "Freelancer" || req.user.utype == "Seller") {
-            if (req.user.email != req.body.email) return res.json({msg: "NOT AUTHORIZED"})
-        }
+        // if (req.user.utype == "Freelancer" || req.user.utype == "Seller") {
+        //     if (req.user.email != req.body.email) return res.json({msg: "NOT AUTHORIZED"})
+        // }
 
-        await User.findByIdAndUpdate(user._id, {updatedBy: req.user.userId, updatedAt: Date.now(), ...updatedFields})
-        res.json({msg: `${utype.toUpperCase()} UPDATED`, data: user})
+        await User.findByIdAndUpdate(userId, {email:email,updatedBy: req.user.userId, updatedAt: Date.now(), ...updatedFields})
+        res.json({msg: `${utype.toUpperCase()} UPDATED`,  data:{fullName:user.fullName,
+            email:user.email,  position:user.position,linkedAccounts:user.linkedAccounts,skillTags:user.skillTags,
+            portfolio:user.portfolio , availability:user.availability,description:user.description,
+            projects:user.projects, notifications:user.notifications
+
+        }})
     } catch (error) {
         console.error(error)
     }
