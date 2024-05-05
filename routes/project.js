@@ -9,14 +9,28 @@ var router = express.Router();
 router.get("/ShowProjects", async (req, res) => {
     try {
        const page = req.query.page || 0; 
-       const ProjPerPage = 3;
-       const Allprojects =  await Projects.find({isDeleted:false},{isDeleted:0,_id:0}).populate({
+       const ProjPerPage = 4;
+       const Allprojects =  await Projects.find({isDeleted:false},{isDeleted:0}).populate({
         path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
          res.json({data: Allprojects })
     }catch (error) {
         console.error(error)
     
+}}
+);
+router.get("/ShowMyProjects", async (req, res) => {
+  try {
+     const page = req.query.page || 0; 
+     const ProjPerPage = 5;
+    const userId = req.user.userId;
+     const Allprojects =  await Projects.find({isDeleted:false,sellerId:userId},{isDeleted:0}).populate({
+      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+
+       res.status(200).json({data: Allprojects })
+  }catch (error) {
+      console.error(error)
+  
 }}
 );
 router.get("/SearchProjects", async (req, res) => {
@@ -29,7 +43,7 @@ router.get("/SearchProjects", async (req, res) => {
       const allProjects = await Projects.find({isDeleted:false},{isDeleted:0,_id:0}).populate({
         path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
       
-      return res.json({ data: allProjects });
+      return res.status(200).json({ data: allProjects });
     }
      const Search  = new RegExp(req.body.Search, 'i');
      
@@ -45,7 +59,7 @@ router.get("/SearchProjects", async (req, res) => {
     },{_id:0,isDeleted:0}).populate({
       path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
-       res.json({ data: Allprojects })
+       res.status(200).json({ data: Allprojects })
   } catch (error) {
       console.error(error);
     
@@ -91,7 +105,7 @@ router.get("/filterProjects", async (req, res) => {
     const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
       path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
-    res.json({ data: projects });
+    res.status(200).json({ data: projects });
   } catch (error) {
     console.error(error);
   }
@@ -105,7 +119,7 @@ router.get("/ShowProjectbyId", async (req, res) => {
       if (!Project || Project.isDeleted == true) return res.json({ msg: "Project not Found" });
       
 
-       res.json({data: Project})
+       res.status(200).json({data: Project})
   }catch (error) {
       console.error(error)
   
@@ -125,7 +139,7 @@ router.post("/Projectbid", async (req, res) => {
        await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
     
 
-       res.json({data: newbid})
+       res.status(200).json({data: newbid})
   }catch (error) {
       console.error(error)
   
@@ -140,7 +154,7 @@ router.get("/ShowMyBids", async (req, res) => {
       return res.json({error:"You have no bids at the moment"});
      }
 
-       res.json({data: Allbids})
+       res.status(200).json({data: Allbids})
   }catch (error) {
       console.error(error)
   
@@ -173,7 +187,7 @@ router.post("/EditMyBid", async (req, res) => {
   project.bids[index].Updatedby = req.user.userId;
   await project.save();
      
-       res.json({message: " Bid Edited Successfully" })
+       res.status(200).json({message: " Bid Edited Successfully" })
   }catch (error) {
       console.error(error)
   
@@ -200,7 +214,7 @@ router.post("/WithdrawBid", async (req, res) => {
 project.bids.splice(index, 1);
 await project.save();
      
-       res.json({message: " Bid Removed Successfully" })
+       res.status(200).json({message: " Bid Removed Successfully" })
   }catch (error) {
       console.error(error)
   
@@ -216,7 +230,7 @@ router.post("/ShowBidsbyProject", async (req, res) => {
       return res.status(404).json({ error: "No project found" });
   }  
       
-       res.json( {data : project.bids})
+       res.status(200).json( {data : project.bids})
   }catch (error) {
       console.error(error);
   
@@ -243,7 +257,7 @@ router.post("/HireFreelancer", async (req, res) => {
 
  
 
-       res.json({ message: "Freelancer Hired", "Project status": project.status})
+       res.status(200).json({ message: "Freelancer Hired", "Project status": project.status})
   }catch (error) {
       console.error(error)
   

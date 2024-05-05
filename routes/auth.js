@@ -67,7 +67,7 @@ router.post("/login", async (req, res) => {
             msg: "LOGGED IN", token , data:{fullName:user.fullName,
                 email:user.email,  position:user.position,linkedAccounts:user.linkedAccounts,skillTags:user.skillTags,
                 portfolio:user.portfolio , availability:user.availability,description:user.description,
-                projects:user.projects, notifications:user.notifications
+                projects:user.projects, notifications:user.notifications,utype:user.utype
 
             }
         })

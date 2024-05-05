@@ -51,7 +51,9 @@ router.put("/seller/Updateprojects/:projectId", async (req, res) => {
       price,
       projectType,
       skillTags,
+      status
     } = req.body;
+ 
 
     // Create an object to store the fields to be updated
     const updatedFields = {};
@@ -63,6 +65,7 @@ router.put("/seller/Updateprojects/:projectId", async (req, res) => {
     if (price) updatedFields.price = price;
     if (projectType) updatedFields.projectType = projectType;
     if (skillTags) updatedFields.skillTags = skillTags;
+    if (status) updatedFields.status = status;
 
     const updatedProject = await project.findByIdAndUpdate(
       projectId,
@@ -78,7 +81,8 @@ router.put("/seller/Updateprojects/:projectId", async (req, res) => {
     await updatedProject.save();
 
     res.json({
-      message: "Project updated successfully"
+      msg: "Project Updated successfully",
+      data:updatedProject
     });
   } catch (error) {
     console.error(error);
@@ -119,7 +123,7 @@ router.post("/seller/DeleteProject/:projectId", async (req, res) => {
    deletedProject.DeletedAt = new Date();
    await deletedProject.save();
 
-    res.json({ message: "Project deleted successfully" });
+    res.json({ msg: "Project deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

@@ -23,7 +23,7 @@ const projectSchema = new mongoose.Schema({
   },
   price: { type: Number, required: true }, // can be hourly or fixed
   projectType: {
-    type: [String],
+    type: String,
     enum: ["Fixed Price", "Hourly"],
     required: true,
   },
