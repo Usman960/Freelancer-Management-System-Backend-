@@ -27,7 +27,8 @@ const userSchema = new mongoose.Schema({
     notifications: [
         {
             message: { type: String, required: true }, // Notification message
-            createdAt: { type: Date, default: Date.now } // Notification creation date
+            createdAt: { type: Date, default: Date.now }, // Notification creation date
+            cancelled: {type: Boolean, default: false}
         }
     ],
     isActive: {type: Boolean, default: false},

@@ -125,26 +125,41 @@ router.get("/ShowProjectbyId", async (req, res) => {
   
 }}
 );
+
 router.post("/Projectbid", async (req, res) => {
   try {
       const projectid = req.body.ProjectId;
       const newbid = req.body.bids;
       const freelancerId = req.user.userId;
 
-     const existingbid =  await Projects.findOne({_id:projectid,"bids.freelancerId": freelancerId,isDeleted:false});
-     if (existingbid){
-     return res.status(400).json({error:"You already have a bid on this project!"})
-     }
+      const project = await Projects.findOne({_id:projectid, isDeleted: false});
+
+      if (!project) {
+        return res.status(404).json({ error: "Project not found!" });
+      }
+
+      const existingbid =  await Projects.findOne({_id:projectid,"bids.freelancerId": freelancerId,isDeleted:false});
+      if (existingbid){
+        return res.status(400).json({error:"You already have a bid on this project!"})
+      }
       
-       await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
+
+      const sellerId = project.sellerId
+      const projectName = project.projectName
+      await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
+      
+      const notificationMessage = `You received a new bid for the project '${projectName}'.`
     
+      await Users.findOneAndUpdate({_id:sellerId},{ $push: { notifications: { message: notificationMessage } } })
 
        res.status(200).json({data: newbid})
-  }catch (error) {
+  } catch (error) {
       console.error(error)
   
-}}
+    }
+}
 );
+
 router.get("/ShowMyBids", async (req, res) => {
   try {
      const freelancerID = req.user.userId;

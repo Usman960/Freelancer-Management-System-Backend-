@@ -12,8 +12,8 @@ router.post("/seller/addproject", async (req, res) => {
       projectLength,
       skillLevel,
       price,
-      projectType,
-      skillTags,
+      projectType
+      // skillTags,
     } = req.body;
    const sellerId = req.user.userId;
     const seller = await user.findOne({ _id: sellerId, utype: "Seller" });
@@ -27,8 +27,8 @@ router.post("/seller/addproject", async (req, res) => {
       projectLength,
       skillLevel,
       price,
-      projectType,
-      skillTags
+      projectType
+      // skillTags
     });
 
 
