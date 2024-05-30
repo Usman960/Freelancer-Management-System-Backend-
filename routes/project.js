@@ -19,28 +19,33 @@ router.get("/ShowProjects", async (req, res) => {
     
 }}
 );
-router.get("/ShowMyProjects", async (req, res) => {
-  try {
-     const page = req.query.page || 0; 
-     const ProjPerPage = 5;
-    const userId = req.user.userId;
-     const Allprojects =  await Projects.find({isDeleted:false,sellerId:userId},{isDeleted:0}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
-       res.status(200).json({data: Allprojects })
+
+router.get("/ShowMyProjects/:status", async (req, res) => {
+  try {
+    const page = req.query.page || 0; 
+    const status = req.params.status || "notHired";
+    console.log(status);
+    const ProjPerPage = 5;
+    const userId = req.user.userId;
+     const Allprojects =  await Projects.find({isDeleted:false,sellerId:userId,status:status},{isDeleted:0}).populate({
+      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+      res.status(200).json({data: Allprojects })
   }catch (error) {
       console.error(error)
   
 }}
 );
-router.get("/SearchProjects", async (req, res) => {
+
+
+router.post("/SearchProjects", async (req, res) => {
   try {
      const page = req.query.page || 0; 
      const ProjPerPage = 5;
 
      if (!req.body.Search) {
 
-      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0,_id:0}).populate({
+      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0}).populate({
         path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
       
       return res.status(200).json({ data: allProjects });
@@ -135,6 +140,7 @@ router.post("/Projectbid", async (req, res) => {
      if (existingbid){
      return res.status(400).json({error:"You already have a bid on this project!"})
      }
+     newbid[0].freelancerId = freelancerId;
       
        await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
     
@@ -148,10 +154,10 @@ router.post("/Projectbid", async (req, res) => {
 router.get("/ShowMyBids", async (req, res) => {
   try {
      const freelancerID = req.user.userId;
-     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID,isDeleted :false},{projectName:1,_id:0,"bids.$":1});
+     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID,status:'notHired',isDeleted :false},{projectName:1,"bids.$":1});
      
      if(Allbids.length==0){
-      return res.json({error:"You have no bids at the moment"});
+      return res.status(404).json({msg:"You have no bids at the moment"});
      }
 
        res.status(200).json({data: Allbids})
@@ -160,19 +166,43 @@ router.get("/ShowMyBids", async (req, res) => {
   
 }}
 );
+
+router.get("/Showmyongoingproj/:type", async (req, res) => {
+  try {
+     const freelancerID = req.user.userId;
+     const type = req.params.type ;
+     console.log(type)
+     console.log(freelancerID)
+     const Allproj =  await Projects.find({status:type,freelancerId: freelancerID,isDeleted :false},{bids:0});
+     
+     if(Allproj.length==0){
+      return res.status(404).json({msg:"You have no Ongoing/Completed Projects at the moment"});
+     }
+
+       res.status(200).json({data: Allproj})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
+
+
+
 router.post("/EditMyBid", async (req, res) => {
   try {
      const ProjectID = req.body.ProjectId;
      const freelancerID = req.user.userId;
      const { bidAmount,message } = req.body;
      const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted : false});
+     
      if (!project) {
-      return res.status(404).json({ error: "No project found" });
+      return res.status(404).json({ msg: "No project found" });
   }
      const index = project.bids.findIndex(bids => bids.freelancerId.toString() === freelancerID);
-    
+     
      if (index === -1) {
-      return res.status(404).json({ error: "You have no bids on this project!" });
+      return res.status(404).json({ msg: "You have no bids on this project!" });
   }
 
  
@@ -187,7 +217,7 @@ router.post("/EditMyBid", async (req, res) => {
   project.bids[index].Updatedby = req.user.userId;
   await project.save();
      
-       res.status(200).json({message: " Bid Edited Successfully" })
+       res.status(200).json({msg: "Bid Edited Successfully" })
   }catch (error) {
       console.error(error)
   
