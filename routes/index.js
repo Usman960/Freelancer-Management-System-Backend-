@@ -5,7 +5,6 @@ const jwt = require("jsonwebtoken");
 const projectRouter = require('./project');
 const projectManagementRouter = require("./projectManagement");
 const ratingRouter = require("./rating");
-const communicationRouter = require("./communication");
 const authRouter = require("./auth");
 const userRouter = require("./user");
 
@@ -29,6 +28,5 @@ router.use(async (req, res, next) => {
 router.use("/project", projectRouter);
 router.use("/projectManagement", projectManagementRouter);
 router.use("/rating", ratingRouter);
-router.use("/communication", communicationRouter);
 router.use("/user", userRouter);
 module.exports = router;

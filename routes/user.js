@@ -4,12 +4,26 @@ var express = require("express");
 var router = express.Router();
 
 // view Profile
-router.post("/viewProfile", async (req, res) => {
+router.get("/viewProfile", async (req, res) => {
     try {
-        const email = req.body.email;
-        let user = await User.findOne({email},{password:0,isActive:0,isDeleted:0})
+        const userId = req.user.userId;
+        console.log(userId);
+        let user = await User.findOne({_id:userId},{password:0})
+        console.log(user);
         if (!user || user.isDeleted) return res.status(404).json({msg: "USER DOESN'T EXIST"})
         res.status(200).json({user})
+    } catch (error) {
+        console.error(error);
+    }
+})
+
+router.get("/getAllProfiles", async (req, res) => {
+    try {
+        let users = await User.find({utype: {$in :["Freelancer", "Seller"]}, isActive:true, isDeleted:false},
+            {_id:1, fullName:1, email:1, utype:1, createdAt:1}
+        )
+        if (!users) return res.json({message: "NO USERS FOUND"})
+        res.json({users})
     } catch (error) {
         console.error(error);
     }
@@ -78,20 +92,54 @@ router.post("/addUser", async (req, res) => {
 })
 
 // Delete Freelancer/Seller
-router.post("/deleteUser", async (req, res) => {
+router.post("/deleteUsers/:userIds", async (req, res) => {
     try {
-        const {email} = req.body
-        let user = await User.findOne({email});
-        if (!user || user.isDeleted) return res.status(404).json ({msg: "USER NOT FOUND"})
-        if (user.utype == 'Freelancer' || user.utype == 'Seller') {
-            await User.findByIdAndUpdate(user._id, {isDeleted: true, deletedBy: req.user.userId, deletedAt: Date.now()} )
-            res.json ({msg: `${user.utype.toUpperCase()} DELETED`});
+        const userIds = req.params.userIds.split(","); // Assuming user IDs are comma-separated
+        const deletedBy = req.user.userId;
+        const deletedAt = Date.now();
+
+        // Find and update multiple users in parallel using Promise.all
+        const deletePromises = userIds.map(async (userId) => {
+            const user = await User.findById(userId);
+            if (!user || user.isDeleted) return null;
+
+            if (user.utype === 'Freelancer' || user.utype === 'Seller') {
+                return User.findByIdAndUpdate(
+                    userId,
+                    { isDeleted: true, deletedBy, deletedAt },
+                    { new: true } // To return the updated document
+                );
+            } else {
+                return null; // User not eligible for deletion
+            }
+        });
+
+        const updatedUsers = await Promise.all(deletePromises);
+
+        // Filter out null values (users not found or not eligible for deletion)
+        const deletedUsers = updatedUsers.filter((user) => user !== null);
+
+        if (deletedUsers.length > 0) {
+            res.json({ msg: `${deletedUsers.length} users deleted`, deletedUsers });
+        } else {
+            res.json({ msg: "No eligible users found for deletion" });
         }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.get("/getInactiveUsers", async (req, res) => {
+    try {
+        let users = await User.find({isActive:false}, {_id:1, fullName:1, utype:1, createdAt:1})
+        if (!users) res.json({msg: "NO INACTIVE USERS"})
+        res.json({users})
     } catch (error) {
         console.error(error)
     }
+    
 })
-
 /******* MIDDLEWARE for Super Admin ONLY ********/
 
 router.use((req, res, next) => {

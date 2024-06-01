@@ -60,12 +60,10 @@ router.post("/login", async (req, res) => {
             createdAt: new Date(),
             userId:user._id,
             utype: user.utype,
-            userId: user._id
         }, "MY_SECRET", { expiresIn: "1d" });
 
         res.json({
-            msg: "LOGGED IN", token ,email:user.email
-
+            msg: "LOGGED IN", token
             }
         )
     } catch (error) {
@@ -80,15 +78,15 @@ router.post("/changePassword", async (req, res) => {
         if (!token) return res.json ({msg: "TOKEN NOT FOUND"})
 
         const user = jwt.verify(token.split(" ")[1], "MY_SECRET");
-        const { email, password, confirmPassword } = req.body;
+        const { password, confirmPassword } = req.body;
 
         if (password != confirmPassword) return res.json({ msg: "PASSWORD MISMATCH" });
         
         // Check if the email in the token matches the email in the request body
-        if (user.email !== email) {
-            return res.json({ msg: "INVALID TOKEN FOR THIS EMAIL" });
-        }
-
+        // if (user.email !== email) {
+        //     return res.json({ msg: "INVALID TOKEN FOR THIS EMAIL" });
+        // }
+        const email = user.email;
         await User.findOneAndUpdate({ email }, { password: await bcrypt.hash(password, 5) });
         
         res.json({ msg: "PASSWORD CHANGED" });
