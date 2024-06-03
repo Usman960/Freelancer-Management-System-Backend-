@@ -8,40 +8,44 @@ var router = express.Router();
 
 router.get("/ShowProjects", async (req, res) => {
     try {
-       const page = req.query.page || 0; 
+       const page = req.query.page || 1; 
        const ProjPerPage = 4;
        const Allprojects =  await Projects.find({isDeleted:false},{isDeleted:0}).populate({
-        path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+        path:'sellerId',select: '-_id fullName description'}).skip(page-1 * ProjPerPage).limit(ProjPerPage);
 
-         res.json({data: Allprojects })
+         res.status(200).json({data: Allprojects })
     }catch (error) {
         console.error(error)
     
 }}
 );
-router.get("/ShowMyProjects", async (req, res) => {
-  try {
-     const page = req.query.page || 0; 
-     const ProjPerPage = 5;
-    const userId = req.user.userId;
-     const Allprojects =  await Projects.find({isDeleted:false,sellerId:userId},{isDeleted:0}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
 
-       res.status(200).json({data: Allprojects })
+
+router.get("/ShowMyProjects/:status", async (req, res) => {
+  try {
+    const page = req.query.page || 1; 
+    const ProjPerPage = 4;
+    const status = req.params.status || "notHired";
+    const userId = req.user.userId;
+     const Allprojects =  await Projects.find({isDeleted:false,sellerId:userId,status:status},{isDeleted:0}).populate({
+      path:'sellerId',select: '-_id fullName description'}).skip((page -1)* ProjPerPage).limit(ProjPerPage);
+      res.status(200).json({data: Allprojects })
   }catch (error) {
       console.error(error)
   
 }}
 );
-router.get("/SearchProjects", async (req, res) => {
-  try {
-     const page = req.query.page || 0; 
-     const ProjPerPage = 5;
 
+
+router.post("/SearchProjects", async (req, res) => {
+  try {
+     const page = req.query.page || 1; 
+     const ProjPerPage = 4;
      if (!req.body.Search) {
 
-      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0,_id:0}).populate({
-        path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0}).populate({
+        path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+
       
       return res.status(200).json({ data: allProjects });
     }
@@ -51,13 +55,13 @@ router.get("/SearchProjects", async (req, res) => {
         $or: [
             { skillLevel: Search },
             { projectType: Search },
-            { projectName:Search },
+            { projectName: Search },
             { skillTags: Search },
             { status: Search }
            
         ],isDeleted:false
     },{_id:0,isDeleted:0}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
        res.status(200).json({ data: Allprojects })
   } catch (error) {
@@ -68,8 +72,8 @@ router.get("/SearchProjects", async (req, res) => {
 
 router.get("/filterProjects", async (req, res) => {
   try {
-    const page = req.query.page || 0;
-    const ProjPerPage = 5;
+    const page = req.query.page || 1;
+    const ProjPerPage = 4;
     const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
 
     const filter = {};
@@ -103,7 +107,7 @@ router.get("/filterProjects", async (req, res) => {
     filter.isDeleted = false;
 
     const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
     res.status(200).json({ data: projects });
   } catch (error) {
@@ -116,7 +120,7 @@ router.get("/ShowProjectbyId", async (req, res) => {
   try {
       let Projectid = req.body.ProjectId;
       const Project = await Projects.findOne({ _id: Projectid ,isDeleted:false},{isDeleted:0,_id:0});
-      if (!Project || Project.isDeleted == true) return res.json({ msg: "Project not Found" });
+      if (!Project || Project.isDeleted == true) return res.status(404).json({ msg: "Project not Found" });
       
 
        res.status(200).json({data: Project})
@@ -128,31 +132,34 @@ router.get("/ShowProjectbyId", async (req, res) => {
 
 router.post("/Projectbid", async (req, res) => {
   try {
-      const projectid = req.body.ProjectId;
-      const newbid = req.body.bids;
+      const {projectId,message,bidAmount} = req.body;  
       const freelancerId = req.user.userId;
-
-      const project = await Projects.findOne({_id:projectid, isDeleted: false});
+         let newbid = { 
+      bidAmount,
+      message,
+      freelancerId
+  };
+      const project = await Projects.findOne({_id:projectId, isDeleted: false});
 
       if (!project) {
-        return res.status(404).json({ error: "Project not found!" });
+        return res.status(404).json({ msg: "Project not found!" });
       }
 
-      const existingbid =  await Projects.findOne({_id:projectid,"bids.freelancerId": freelancerId,isDeleted:false});
+      const existingbid =  await Projects.findOne({_id:projectId,"bids.freelancerId": freelancerId,isDeleted:false});
       if (existingbid){
-        return res.status(400).json({error:"You already have a bid on this project!"})
+        return res.status(400).json({msg:"You already have a bid on this project!"})
       }
       
 
       const sellerId = project.sellerId
       const projectName = project.projectName
-      await Projects.findOneAndUpdate({_id:projectid}, { $push:{bids:newbid} });
+      await Projects.findOneAndUpdate({_id:projectId}, { $push:{bids:newbid} });
       
       const notificationMessage = `You received a new bid for the project '${projectName}'.`
     
-      await Users.findOneAndUpdate({_id:sellerId},{ $push: { notifications: { message: notificationMessage } } })
+      await Users.findOneAndUpdate({_id:sellerId},{ $push: { notifications: { message: notificationMessage ,ntype:'Message',projectId:projectId} } })
 
-       res.status(200).json({data: newbid})
+       res.status(200).json({msg:"Bid Added Successfully",data: newbid})
   } catch (error) {
       console.error(error)
   
@@ -162,11 +169,14 @@ router.post("/Projectbid", async (req, res) => {
 
 router.get("/ShowMyBids", async (req, res) => {
   try {
+    const page = req.query.page || 1; 
+     const ProjPerPage = 4;
      const freelancerID = req.user.userId;
-     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID,isDeleted :false},{projectName:1,_id:0,"bids.$":1});
+     const Allbids =  await Projects.find({"bids.freelancerId": freelancerID,status:'notHired',isDeleted :false},{projectName:1,"bids.$":1}
+     ).skip((page-1) * ProjPerPage).limit(ProjPerPage);
      
      if(Allbids.length==0){
-      return res.json({error:"You have no bids at the moment"});
+      return res.status(404).json({msg:"You have no bids at the moment"});
      }
 
        res.status(200).json({data: Allbids})
@@ -175,19 +185,43 @@ router.get("/ShowMyBids", async (req, res) => {
   
 }}
 );
+
+router.get("/Showmyongoingproj/:type", async (req, res) => {
+  try {
+    const page = req.query.page || 1; 
+    const ProjPerPage = 4;
+     const freelancerID = req.user.userId;
+     const type = req.params.type ;
+     const Allproj =  await Projects.find({status:type,freelancerId: freelancerID,isDeleted :false},{bids:0}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+     
+     if(Allproj.length==0){
+      return res.status(404).json({msg:"You have no Ongoing/Completed Projects at the moment"});
+     }
+
+       res.status(200).json({data: Allproj})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
+
+
+
 router.post("/EditMyBid", async (req, res) => {
   try {
      const ProjectID = req.body.ProjectId;
      const freelancerID = req.user.userId;
      const { bidAmount,message } = req.body;
      const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted : false});
+     
      if (!project) {
-      return res.status(404).json({ error: "No project found" });
+      return res.status(404).json({ msg: "No project found" });
   }
      const index = project.bids.findIndex(bids => bids.freelancerId.toString() === freelancerID);
-    
+     
      if (index === -1) {
-      return res.status(404).json({ error: "You have no bids on this project!" });
+      return res.status(404).json({ msg: "You have no bids on this project!" });
   }
 
  
@@ -202,7 +236,7 @@ router.post("/EditMyBid", async (req, res) => {
   project.bids[index].Updatedby = req.user.userId;
   await project.save();
      
-       res.status(200).json({message: " Bid Edited Successfully" })
+       res.status(200).json({msg: "Bid Edited Successfully" })
   }catch (error) {
       console.error(error)
   
@@ -213,6 +247,7 @@ router.post("/WithdrawBid", async (req, res) => {
   try {
      const ProjectID = req.body.ProjectId;
      const freelancerID = req.user.userId;
+     console.log(ProjectID);
     
      const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted:false});
      
@@ -229,7 +264,37 @@ router.post("/WithdrawBid", async (req, res) => {
 project.bids.splice(index, 1);
 await project.save();
      
-       res.status(200).json({message: " Bid Removed Successfully" })
+       res.status(200).json({msg: "Bid Removed Successfully" })
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
+router.post("/Reviewrequest", async (req, res) => {
+  try {
+    const ProjectID = req.body.ProjectId;
+    const freelancerID = req.user.userId;
+    const project =  await Projects.findOne({_id:ProjectID,freelancerId:freelancerID,isDeleted:false}).populate({
+      path:'freelancerId',select: '_id fullName'});
+    if (!project) {
+     return res.status(404).json({ error: "No project found" });
+
+ }  
+
+   const projectName = project.projectName;
+   const SellerId = project.sellerId;
+   const freelancerName = project.freelancerId.fullName;
+
+    const notificationMessage = `Review Request for '${projectName}' by '${freelancerName}'.`;
+    
+    await Users.findOneAndUpdate({_id:SellerId},{ $push: { notifications: { message: notificationMessage ,ntype:'Request',ProjectId:ProjectID,freelancerID:freelancerID} } });
+  
+   await project.save();
+
+ 
+
+       res.status(200).json({ msg: "Review Request Sent to Seller"});
   }catch (error) {
       console.error(error)
   
@@ -237,14 +302,17 @@ await project.save();
 );
 
 //Seller
-router.post("/ShowBidsbyProject", async (req, res) => {
+router.get("/ShowBidsbyProject/:ProjectId", async (req, res) => {
   try {
-     const ProjectID = req.body.ProjectId;
-     const project = await Projects.findOne({_id: ProjectID,isDeleted:false});
+    const page = req.query.page || 1; 
+    const ProjPerPage = 4;
+     const ProjectID = req.params.ProjectId;
+     const project = await Projects.findOne({_id: ProjectID,isDeleted:false}).populate(
+      {path:'bids.freelancerId',select: '_id fullName email'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
      if (!project) {
       return res.status(404).json({ error: "No project found" });
   }  
-      
+      console.log("These are ",project.bids);
        res.status(200).json( {data : project.bids})
   }catch (error) {
       console.error(error);
@@ -259,25 +327,64 @@ router.post("/HireFreelancer", async (req, res) => {
     const project =  await Projects.findOne({_id:ProjectID,isDeleted:false});
     if (!project) {
      return res.status(404).json({ error: "No project found" });
+
  }  
+ console.log(project);
+ console.log(ProjectID);
+ console.log(freelancerID);
    project.freelancerId = freelancerID;
    project.status = "pending";
    const projectName = project.projectName;
 
     const notificationMessage = `You have been hired for the project '${projectName}'.`
     
-    await Users.findOneAndUpdate({_id:freelancerID},{ $push: { notifications: { message: notificationMessage } } })
+    await Users.findOneAndUpdate({_id:freelancerID},{ $push: { notifications: { message: notificationMessage,ntype:'Message' } } })
   
    await project.save();
 
  
 
-       res.status(200).json({ message: "Freelancer Hired", "Project status": project.status})
+       res.status(200).json({ msg: "Freelancer Hired", "Project status": project.status})
   }catch (error) {
       console.error(error)
   
 }}
 );
+
+router.post("/Markcompleted", async (req, res) => {
+  try {
+      let Projectid = req.body.ProjectId;
+      const Project = await Projects.findOne({ _id: Projectid ,isDeleted:false},{isDeleted:0});
+      if (!Project || Project.isDeleted == true) return res.status(404).json({ msg: "Project not Found" });
+      
+     Project.status = 'completed';
+
+     await Project.save();
+       res.status(200).json({msg:"Project has been marked Completed"})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
+router.get("/ShowReviewRequests", async (req, res) => {
+  try {
+      let SellerID = req.user.userId;
+      const user = await Users.findOne({ _id: SellerID,isDeleted:false},
+      {isDeleted:0}).populate(
+      {path:'notifications.ProjectId',select: '_id projectName'}).
+      populate(
+        {path:'notifications.freelancerId',select: '_id fullName'});
+
+        notifications = user.notifications.filter(noti=>noti.ntype==='Request')
+      
+       res.status(200).json({data:notifications})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
 
 
 module.exports = router

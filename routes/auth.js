@@ -63,13 +63,9 @@ router.post("/login", async (req, res) => {
         }, "MY_SECRET", { expiresIn: "1d" });
 
         res.json({
-            msg: "LOGGED IN", token , data:{fullName:user.fullName,
-                email:user.email,  position:user.position,linkedAccounts:user.linkedAccounts,skillTags:user.skillTags,
-                portfolio:user.portfolio , availability:user.availability,description:user.description,
-                projects:user.projects, notifications:user.notifications,utype:user.utype
-
+            msg: "LOGGED IN", token
             }
-        })
+        )
     } catch (error) {
         console.error(error)
     }

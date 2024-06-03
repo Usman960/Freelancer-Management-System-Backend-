@@ -4,12 +4,27 @@ var express = require("express");
 var router = express.Router();
 
 // view Profile
-router.get("/viewProfile/:userId", async (req, res) => {
+router.get("/viewProfile", async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        console.log(userId);
+        let user = await User.findOne({_id:userId},{password:0});
+        console.log(user);
+        if (!user || user.isDeleted) return res.status(404).json({msg: "USER DOESN'T EXIST"})
+        res.status(200).json({user})
+    } catch (error) {
+        console.error(error);
+    }
+})
+
+router.post("/ShowProfile/:userId", async (req, res) => {
     try {
         const userId = req.params.userId;
-        let user = await User.findOne({_id:userId},{password:0})
-        if (!user || user.isDeleted) return res.json({msg: "USER DOESN'T EXIST"})
-        res.json({user})
+        console.log(userId);
+        let user = await User.findOne({_id:userId},{password:0,notifications:0})
+        console.log(user);
+        if (!user || user.isDeleted) return res.status(404).json({msg: "USER DOESN'T EXIST"})
+        res.status(200).json({user})
     } catch (error) {
         console.error(error);
     }
@@ -34,15 +49,14 @@ router.post("/editProfile", async (req, res) => {
         const userId = req.user.userId;
         const utype = req.user.utype;
         let user = await User.findOne({_id:userId})
-        if (!user || user.isDeleted) return res.json({msg: "USER NOT FOUND"})
-        console.log(email);
+        if (!user || user.isDeleted) return res.status(404).json({msg: "USER NOT FOUND"})
 
         // if (req.user.utype == "Freelancer" || req.user.utype == "Seller") {
         //     if (req.user.email != req.body.email) return res.json({msg: "NOT AUTHORIZED"})
         // }
 
         await User.findByIdAndUpdate(userId, {email:email,updatedBy: req.user.userId, updatedAt: Date.now(), ...updatedFields})
-        res.json({msg: `${utype.toUpperCase()} UPDATED`,  data:{fullName:user.fullName,
+        res.status(200).json({msg: `${utype.toUpperCase()} UPDATED`,  data:{fullName:user.fullName,
             email:user.email,  position:user.position,linkedAccounts:user.linkedAccounts,skillTags:user.skillTags,
             portfolio:user.portfolio , availability:user.availability,description:user.description,
             projects:user.projects, notifications:user.notifications
