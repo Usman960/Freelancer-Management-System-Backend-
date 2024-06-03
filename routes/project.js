@@ -275,6 +275,7 @@ router.post("/Reviewrequest", async (req, res) => {
   try {
     const ProjectID = req.body.ProjectId;
     const freelancerID = req.user.userId;
+    
     const project =  await Projects.findOne({_id:ProjectID,freelancerId:freelancerID,isDeleted:false}).populate({
       path:'freelancerId',select: '_id fullName'});
     if (!project) {
@@ -285,10 +286,11 @@ router.post("/Reviewrequest", async (req, res) => {
    const projectName = project.projectName;
    const SellerId = project.sellerId;
    const freelancerName = project.freelancerId.fullName;
+   
 
     const notificationMessage = `Review Request for '${projectName}' by '${freelancerName}'.`;
     
-    await Users.findOneAndUpdate({_id:SellerId},{ $push: { notifications: { message: notificationMessage ,ntype:'Request',ProjectId:ProjectID,freelancerID:freelancerID} } });
+    await Users.findOneAndUpdate({_id:SellerId},{ $push: { notifications: { message: notificationMessage ,ntype:'Request',ProjectId:ProjectID,freelancerId:freelancerID} } });
   
    await project.save();
 
@@ -372,11 +374,11 @@ router.get("/ShowReviewRequests", async (req, res) => {
       let SellerID = req.user.userId;
       const user = await Users.findOne({ _id: SellerID,isDeleted:false},
       {isDeleted:0}).populate(
-      {path:'notifications.ProjectId',select: '_id projectName'}).
+      {path:'notifications.ProjectId',select: '_id projectName status'}).
       populate(
         {path:'notifications.freelancerId',select: '_id fullName'});
 
-        notifications = user.notifications.filter(noti=>noti.ntype==='Request')
+        notifications = user.notifications.filter(noti=>noti.ntype==='Request'&& noti.ProjectId.status=== 'pending')
       
        res.status(200).json({data:notifications})
   }catch (error) {
