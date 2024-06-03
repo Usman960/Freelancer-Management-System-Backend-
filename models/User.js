@@ -28,7 +28,16 @@ const userSchema = new mongoose.Schema({
         {
             message: { type: String, required: true }, // Notification message
             createdAt: { type: Date, default: Date.now }, // Notification creation date
-            cancelled: {type: Boolean, default: false}
+            cancelled: {type: Boolean, default: false},
+            ntype:{type:String,enum:['Request','Message']},
+            ProjectId:  {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Project'
+            },
+            freelancerId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User"
+            }
         }
     ],
     isActive: {type: Boolean, default: false},

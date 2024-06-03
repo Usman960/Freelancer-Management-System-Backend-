@@ -45,6 +45,7 @@ router.post("/SearchProjects", async (req, res) => {
 
       const allProjects = await Projects.find({isDeleted:false},{isDeleted:0}).populate({
         path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+
       
       return res.status(200).json({ data: allProjects });
     }
@@ -54,13 +55,13 @@ router.post("/SearchProjects", async (req, res) => {
         $or: [
             { skillLevel: Search },
             { projectType: Search },
-            { projectName:Search },
+            { projectName: Search },
             { skillTags: Search },
             { status: Search }
            
         ],isDeleted:false
     },{_id:0,isDeleted:0}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip(page * ProjPerPage).limit(ProjPerPage);
+      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
        res.status(200).json({ data: Allprojects })
   } catch (error) {
@@ -71,8 +72,8 @@ router.post("/SearchProjects", async (req, res) => {
 
 router.get("/filterProjects", async (req, res) => {
   try {
-    const page = req.query.page || 0;
-    const ProjPerPage = 5;
+    const page = req.query.page || 1;
+    const ProjPerPage = 4;
     const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
 
     const filter = {};
@@ -146,7 +147,7 @@ router.post("/Projectbid", async (req, res) => {
 
       const existingbid =  await Projects.findOne({_id:projectId,"bids.freelancerId": freelancerId,isDeleted:false});
       if (existingbid){
-        return res.json({msg:"You already have a bid on this project!"})
+        return res.status(400).json({msg:"You already have a bid on this project!"})
       }
       
 
@@ -156,7 +157,7 @@ router.post("/Projectbid", async (req, res) => {
       
       const notificationMessage = `You received a new bid for the project '${projectName}'.`
     
-      await Users.findOneAndUpdate({_id:sellerId},{ $push: { notifications: { message: notificationMessage } } })
+      await Users.findOneAndUpdate({_id:sellerId},{ $push: { notifications: { message: notificationMessage ,ntype:'Message',projectId:projectId} } })
 
        res.status(200).json({msg:"Bid Added Successfully",data: newbid})
   } catch (error) {
@@ -270,17 +271,48 @@ await project.save();
 }}
 );
 
+router.post("/Reviewrequest", async (req, res) => {
+  try {
+    const ProjectID = req.body.ProjectId;
+    const freelancerID = req.user.userId;
+    const project =  await Projects.findOne({_id:ProjectID,freelancerId:freelancerID,isDeleted:false}).populate({
+      path:'freelancerId',select: '_id fullName'});
+    if (!project) {
+     return res.status(404).json({ error: "No project found" });
+
+ }  
+
+   const projectName = project.projectName;
+   const SellerId = project.sellerId;
+   const freelancerName = project.freelancerId.fullName;
+
+    const notificationMessage = `Review Request for '${projectName}' by '${freelancerName}'.`;
+    
+    await Users.findOneAndUpdate({_id:SellerId},{ $push: { notifications: { message: notificationMessage ,ntype:'Request',ProjectId:ProjectID,freelancerID:freelancerID} } });
+  
+   await project.save();
+
+ 
+
+       res.status(200).json({ msg: "Review Request Sent to Seller"});
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
 //Seller
-router.post("/ShowBidsbyProject", async (req, res) => {
+router.get("/ShowBidsbyProject/:ProjectId", async (req, res) => {
   try {
     const page = req.query.page || 1; 
     const ProjPerPage = 4;
-     const ProjectID = req.body.ProjectId;
-     const project = await Projects.findOne({_id: ProjectID,isDeleted:false}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+     const ProjectID = req.params.ProjectId;
+     const project = await Projects.findOne({_id: ProjectID,isDeleted:false}).populate(
+      {path:'bids.freelancerId',select: '_id fullName email'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
      if (!project) {
       return res.status(404).json({ error: "No project found" });
   }  
-      
+      console.log("These are ",project.bids);
        res.status(200).json( {data : project.bids})
   }catch (error) {
       console.error(error);
@@ -295,14 +327,18 @@ router.post("/HireFreelancer", async (req, res) => {
     const project =  await Projects.findOne({_id:ProjectID,isDeleted:false});
     if (!project) {
      return res.status(404).json({ error: "No project found" });
+
  }  
+ console.log(project);
+ console.log(ProjectID);
+ console.log(freelancerID);
    project.freelancerId = freelancerID;
    project.status = "pending";
    const projectName = project.projectName;
 
     const notificationMessage = `You have been hired for the project '${projectName}'.`
     
-    await Users.findOneAndUpdate({_id:freelancerID},{ $push: { notifications: { message: notificationMessage } } })
+    await Users.findOneAndUpdate({_id:freelancerID},{ $push: { notifications: { message: notificationMessage,ntype:'Message' } } })
   
    await project.save();
 
@@ -314,6 +350,41 @@ router.post("/HireFreelancer", async (req, res) => {
   
 }}
 );
+
+router.post("/Markcompleted", async (req, res) => {
+  try {
+      let Projectid = req.body.ProjectId;
+      const Project = await Projects.findOne({ _id: Projectid ,isDeleted:false},{isDeleted:0});
+      if (!Project || Project.isDeleted == true) return res.status(404).json({ msg: "Project not Found" });
+      
+     Project.status = 'completed';
+
+     await Project.save();
+       res.status(200).json({msg:"Project has been marked Completed"})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
+router.get("/ShowReviewRequests", async (req, res) => {
+  try {
+      let SellerID = req.user.userId;
+      const user = await Users.findOne({ _id: SellerID,isDeleted:false},
+      {isDeleted:0}).populate(
+      {path:'notifications.ProjectId',select: '_id projectName'}).
+      populate(
+        {path:'notifications.freelancerId',select: '_id fullName'});
+
+        notifications = user.notifications.filter(noti=>noti.ntype==='Request')
+      
+       res.status(200).json({data:notifications})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
 
 
 module.exports = router

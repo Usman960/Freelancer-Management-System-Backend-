@@ -8,7 +8,20 @@ router.get("/viewProfile", async (req, res) => {
     try {
         const userId = req.user.userId;
         console.log(userId);
-        let user = await User.findOne({_id:userId},{password:0})
+        let user = await User.findOne({_id:userId},{password:0});
+        console.log(user);
+        if (!user || user.isDeleted) return res.status(404).json({msg: "USER DOESN'T EXIST"})
+        res.status(200).json({user})
+    } catch (error) {
+        console.error(error);
+    }
+})
+
+router.post("/ShowProfile/:userId", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        console.log(userId);
+        let user = await User.findOne({_id:userId},{password:0,notifications:0})
         console.log(user);
         if (!user || user.isDeleted) return res.status(404).json({msg: "USER DOESN'T EXIST"})
         res.status(200).json({user})
