@@ -28,7 +28,8 @@ router.get("/ShowMyProjects/:status", async (req, res) => {
     const status = req.params.status || "notHired";
     const userId = req.user.userId;
      const Allprojects =  await Projects.find({isDeleted:false,sellerId:userId,status:status},{isDeleted:0}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip((page -1)* ProjPerPage).limit(ProjPerPage);
+      path:'sellerId',select: '_id fullName description'}).populate({
+        path:'freelancerId',select: '_id fullName description'}).skip((page -1)* ProjPerPage).limit(ProjPerPage);
       res.status(200).json({data: Allprojects })
   }catch (error) {
       console.error(error)
@@ -192,7 +193,9 @@ router.get("/Showmyongoingproj/:type", async (req, res) => {
     const ProjPerPage = 4;
      const freelancerID = req.user.userId;
      const type = req.params.type ;
-     const Allproj =  await Projects.find({status:type,freelancerId: freelancerID,isDeleted :false},{bids:0}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+     const Allproj =  await Projects.find({status:type,freelancerId: freelancerID,isDeleted :false},{bids:0})
+     .populate({
+      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
      
      if(Allproj.length==0){
       return res.status(404).json({msg:"You have no Ongoing/Completed Projects at the moment"});
@@ -381,6 +384,24 @@ router.get("/ShowReviewRequests", async (req, res) => {
         notifications = user.notifications.filter(noti=>noti.ntype==='Request'&& noti.ProjectId.status=== 'pending')
       
        res.status(200).json({data:notifications})
+  }catch (error) {
+      console.error(error)
+  
+}}
+);
+
+router.get("/GetPendingProjects/:status", async (req, res) => {
+  try {
+      let userID = req.user.userId;
+      const status = req.params.status;
+      const count = await Projects.find({ $or:[{sellerId: userID},{freelancerId:userID}],isDeleted:false,status:status}).countDocuments()
+
+      if (count == 0){
+       return  res.status(404).json({count:0})
+      }
+
+      
+       res.status(200).json({count:count})
   }catch (error) {
       console.error(error)
   
