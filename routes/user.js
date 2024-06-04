@@ -32,9 +32,16 @@ router.post("/ShowProfile/:userId", async (req, res) => {
 
 router.get("/getAllProfiles", async (req, res) => {
     try {
-        let users = await User.find({utype: {$in :["Freelancer", "Seller"]}, isActive:true, isDeleted:false},
-            {_id:1, fullName:1, email:1, utype:1, createdAt:1}
-        )
+        let users;
+        if (req.user.utype === "Super Admin") {
+            users = await User.find({utype: {$in :["Freelancer", "Seller", "Admin"]}, isActive:true, isDeleted:false},
+                {_id:1, fullName:1, email:1, utype:1, createdAt:1}
+            )
+        } else {
+            users = await User.find({utype: {$in :["Freelancer", "Seller"]}, isActive:true, isDeleted:false},
+                {_id:1, fullName:1, email:1, utype:1, createdAt:1}
+            )
+        }
         if (!users) return res.json({message: "NO USERS FOUND"})
         res.json({users})
     } catch (error) {
