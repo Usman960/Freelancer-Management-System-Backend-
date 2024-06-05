@@ -44,7 +44,7 @@ router.post("/SearchProjects", async (req, res) => {
      const ProjPerPage = 4;
      if (!req.body.Search) {
 
-      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0}).populate({
+      const allProjects = await Projects.find({isDeleted:false,status:'notHired'},{isDeleted:0}).populate({
         path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
       
@@ -60,7 +60,7 @@ router.post("/SearchProjects", async (req, res) => {
             { skillTags: Search },
             { status: Search }
            
-        ],isDeleted:false
+        ],isDeleted:false,status:'notHired'
     },{_id:0,isDeleted:0}).populate({
       path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
@@ -71,50 +71,50 @@ router.post("/SearchProjects", async (req, res) => {
   }
 });
 
-router.get("/filterProjects", async (req, res) => {
-  try {
-    const page = req.query.page || 1;
-    const ProjPerPage = 4;
-    const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
+// router.get("/filterProjects", async (req, res) => {
+//   try {
+//     const page = req.query.page || 1;
+//     const ProjPerPage = 4;
+//     const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
 
-    const filter = {};
+//     const filter = {};
 
-    if (rating) {
-      filter.rating = rating;
-    }
-    if (price) {
-      filter.price =  price ;
-    }
+//     if (rating) {
+//       filter.rating = rating;
+//     }
+//     if (price) {
+//       filter.price =  price ;
+//     }
 
-    if (priceGreaterThan) {
-      filter.price = { $gt: priceGreaterThan };
-    }
-    if (priceLessThan) {
-      filter.price = { $lt: priceLessThan };
-    }
-    if (projectType) {
-      filter.projectType = projectType;
-    }
-    if (skillLevel) {
-      filter.skillLevel = skillLevel;
-    }
-    if (projectLength) {
-      filter.projectLength = projectLength;
-    }
-    if (skillTags) {
-      filter.skillTags = skillTags;
-    }
+//     if (priceGreaterThan) {
+//       filter.price = { $gt: priceGreaterThan };
+//     }
+//     if (priceLessThan) {
+//       filter.price = { $lt: priceLessThan };
+//     }
+//     if (projectType) {
+//       filter.projectType = projectType;
+//     }
+//     if (skillLevel) {
+//       filter.skillLevel = skillLevel;
+//     }
+//     if (projectLength) {
+//       filter.projectLength = projectLength;
+//     }
+//     if (skillTags) {
+//       filter.skillTags = skillTags;
+//     }
 
-    filter.isDeleted = false;
+//     filter.isDeleted = false;
 
-    const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+//     const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
+//       path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
-    res.status(200).json({ data: projects });
-  } catch (error) {
-    console.error(error);
-  }
-});
+//     res.status(200).json({ data: projects });
+//   } catch (error) {
+//     console.error(error);
+//   }
+// });
 
 
 router.get("/ShowProjectbyId", async (req, res) => {
@@ -192,10 +192,13 @@ router.get("/Showmyongoingproj/:type", async (req, res) => {
     const page = req.query.page || 1; 
     const ProjPerPage = 4;
      const freelancerID = req.user.userId;
+     console.log(freelancerID);
      const type = req.params.type ;
      const Allproj =  await Projects.find({status:type,freelancerId: freelancerID,isDeleted :false},{bids:0})
      .populate({
       path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+
+      console.log(Allproj);
      
      if(Allproj.length==0){
       return res.status(404).json({msg:"You have no Ongoing/Completed Projects at the moment"});

@@ -8,12 +8,6 @@ const userSchema = new mongoose.Schema({
     utype: { type: String, enum: ['Super Admin', 'Admin', 'Freelancer', 'Seller'], required: true },
     linkedAccounts: [String],
     skillTags: [String],
-    portfolio:[{
-        title: { type: String, required: true },
-        description: { type: String, required: true },
-        imageUrl: { type: String, required: true },
-        // You can add more fields as needed for each portfolio item
-    }],
     availability: { type: String, enum: ['Online', 'Offline']},
     description: { type: String },
     projects: [
