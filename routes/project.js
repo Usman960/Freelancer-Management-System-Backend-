@@ -44,8 +44,8 @@ router.post("/SearchProjects", async (req, res) => {
      const ProjPerPage = 4;
      if (!req.body.Search) {
 
-      const allProjects = await Projects.find({isDeleted:false},{isDeleted:0}).populate({
-        path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+      const allProjects = await Projects.find({isDeleted:false,status:'notHired'},{isDeleted:0}).populate({
+        path:'sellerId',select: '_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
       
       return res.status(200).json({ data: allProjects });
@@ -60,9 +60,9 @@ router.post("/SearchProjects", async (req, res) => {
             { skillTags: Search },
             { status: Search }
            
-        ],isDeleted:false
+        ],isDeleted:false,status:'notHired'
     },{_id:0,isDeleted:0}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+      path:'sellerId',select: '_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
        res.status(200).json({ data: Allprojects })
   } catch (error) {
@@ -71,50 +71,50 @@ router.post("/SearchProjects", async (req, res) => {
   }
 });
 
-router.get("/filterProjects", async (req, res) => {
-  try {
-    const page = req.query.page || 1;
-    const ProjPerPage = 4;
-    const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
+// router.get("/filterProjects", async (req, res) => {
+//   try {
+//     const page = req.query.page || 1;
+//     const ProjPerPage = 4;
+//     const { rating, price, projectType, skillLevel, projectLength, skillTags, priceGreaterThan, priceLessThan } = req.query;
 
-    const filter = {};
+//     const filter = {};
 
-    if (rating) {
-      filter.rating = rating;
-    }
-    if (price) {
-      filter.price =  price ;
-    }
+//     if (rating) {
+//       filter.rating = rating;
+//     }
+//     if (price) {
+//       filter.price =  price ;
+//     }
 
-    if (priceGreaterThan) {
-      filter.price = { $gt: priceGreaterThan };
-    }
-    if (priceLessThan) {
-      filter.price = { $lt: priceLessThan };
-    }
-    if (projectType) {
-      filter.projectType = projectType;
-    }
-    if (skillLevel) {
-      filter.skillLevel = skillLevel;
-    }
-    if (projectLength) {
-      filter.projectLength = projectLength;
-    }
-    if (skillTags) {
-      filter.skillTags = skillTags;
-    }
+//     if (priceGreaterThan) {
+//       filter.price = { $gt: priceGreaterThan };
+//     }
+//     if (priceLessThan) {
+//       filter.price = { $lt: priceLessThan };
+//     }
+//     if (projectType) {
+//       filter.projectType = projectType;
+//     }
+//     if (skillLevel) {
+//       filter.skillLevel = skillLevel;
+//     }
+//     if (projectLength) {
+//       filter.projectLength = projectLength;
+//     }
+//     if (skillTags) {
+//       filter.skillTags = skillTags;
+//     }
 
-    filter.isDeleted = false;
+//     filter.isDeleted = false;
 
-    const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
-      path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+//     const projects = await Projects.find(filter,{_id:0,isDeleted:false}).populate({
+//       path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
-    res.status(200).json({ data: projects });
-  } catch (error) {
-    console.error(error);
-  }
-});
+//     res.status(200).json({ data: projects });
+//   } catch (error) {
+//     console.error(error);
+//   }
+// });
 
 
 router.get("/ShowProjectbyId", async (req, res) => {
@@ -192,13 +192,15 @@ router.get("/Showmyongoingproj/:type", async (req, res) => {
     const page = req.query.page || 1; 
     const ProjPerPage = 4;
      const freelancerID = req.user.userId;
+    
      const type = req.params.type ;
      const Allproj =  await Projects.find({status:type,freelancerId: freelancerID,isDeleted :false},{bids:0})
      .populate({
       path:'sellerId',select: '-_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
+
      
-     if(Allproj.length==0){
-      return res.status(404).json({msg:"You have no Ongoing/Completed Projects at the moment"});
+     if(!Allproj || Allproj.length==0){
+      return res.status(200).json({data:[],msg:"You have no Ongoing/Completed Projects at the moment"});
      }
 
        res.status(200).json({data: Allproj})
@@ -250,7 +252,7 @@ router.post("/WithdrawBid", async (req, res) => {
   try {
      const ProjectID = req.body.ProjectId;
      const freelancerID = req.user.userId;
-     console.log(ProjectID);
+     
     
      const project =  await Projects.findOne({_id:ProjectID,"bids.freelancerId": freelancerID,isDeleted:false});
      
@@ -317,7 +319,7 @@ router.get("/ShowBidsbyProject/:ProjectId", async (req, res) => {
      if (!project) {
       return res.status(404).json({ error: "No project found" });
   }  
-      console.log("These are ",project.bids);
+      
        res.status(200).json( {data : project.bids})
   }catch (error) {
       console.error(error);
@@ -334,9 +336,7 @@ router.post("/HireFreelancer", async (req, res) => {
      return res.status(404).json({ error: "No project found" });
 
  }  
- console.log(project);
- console.log(ProjectID);
- console.log(freelancerID);
+
    project.freelancerId = freelancerID;
    project.status = "pending";
    const projectName = project.projectName;
@@ -396,8 +396,8 @@ router.get("/GetPendingProjects/:status", async (req, res) => {
       const status = req.params.status;
       const count = await Projects.find({ $or:[{sellerId: userID},{freelancerId:userID}],isDeleted:false,status:status}).countDocuments()
 
-      if (count == 0){
-       return  res.status(404).json({count:0})
+      if (!count || count == 0){
+       return  res.status(200).json({count:0})
       }
 
       
