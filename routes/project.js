@@ -380,7 +380,7 @@ router.get("/ShowReviewRequests", async (req, res) => {
       {path:'notifications.ProjectId',select: '_id projectName status'}).
       populate(
         {path:'notifications.freelancerId',select: '_id fullName'});
-
+        console.log(user)
         notifications = user.notifications.filter(noti=>noti.ntype==='Request'&& noti.ProjectId.status=== 'pending')
       
        res.status(200).json({data:notifications})
@@ -408,6 +408,66 @@ router.get("/GetPendingProjects/:status", async (req, res) => {
 }}
 );
 
+router.get("/getTotalSales", async (req, res) => {
+  try {
+    const userType = req.user.utype;
+    const userId = req.user.id;
 
+    let totalSales = 0;
+
+    if (userType === "Super Admin" || userType === "Admin") {
+      // Fetch all completed projects
+      const completedProjects = await Projects.find({ status: "completed" }).populate('bids.freelancerId');
+
+      // Sum the bids of hired freelancers
+      completedProjects.forEach(project => {
+        if (project.freelancerId) {
+          project.bids.forEach(bid => {
+            if (bid.freelancerId.equals(project.freelancerId)) {
+              totalSales += bid.bidAmount;
+            }
+          });
+        }
+      });
+
+    } else if (userType === "Freelancer") {
+      // Fetch all completed projects for the freelancer
+      const freelancerProjects = await Projects.find({
+        status: "completed",
+        freelancerId: userId
+      }).populate('bids.freelancerId');
+
+      // Sum the bids of the freelancer
+      freelancerProjects.forEach(project => {
+        project.bids.forEach(bid => {
+          if (bid.freelancerId.equals(userId)) {
+            totalSales += bid.bidAmount;
+          }
+        });
+      });
+
+    } else if (userType === "Seller") {
+      // Fetch all completed projects for the seller
+      const sellerProjects = await Projects.find({
+        status: "completed",
+        sellerId: userId
+      }).populate('bids.freelancerId');
+
+      // Sum the prices of the completed projects
+      sellerProjects.forEach(project => {
+        totalSales += project.price;
+      });
+
+    } else {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    return res.status(200).json({ totalSales });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 module.exports = router
