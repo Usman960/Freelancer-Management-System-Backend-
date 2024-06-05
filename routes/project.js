@@ -411,7 +411,7 @@ router.get("/GetPendingProjects/:status", async (req, res) => {
 router.get("/getTotalSales", async (req, res) => {
   try {
     const userType = req.user.utype;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     let totalSales = 0;
 
@@ -454,8 +454,16 @@ router.get("/getTotalSales", async (req, res) => {
       }).populate('bids.freelancerId');
 
       // Sum the prices of the completed projects
+      // sellerProjects.forEach(project => {
+      //   totalSales += project.price;
+      // });
+      // Sum the bids of the freelancer
       sellerProjects.forEach(project => {
-        totalSales += project.price;
+        project.bids.forEach(bid => {
+          if (bid.freelancerId.equals(project.freelancerId)) {
+            totalSales += bid.bidAmount;
+          }
+        });
       });
 
     } else {
@@ -469,5 +477,14 @@ router.get("/getTotalSales", async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+router.get("/totalProjects", async (req, res) => {
+  try {
+    const count = await Projects.find({status: "completed", isDeleted: false}).countDocuments();
+    res.json({count});
+  } catch (error) {
+    console.error(error);
+  }
+})
 
 module.exports = router

@@ -160,6 +160,24 @@ router.get("/getInactiveUsers", async (req, res) => {
         console.error(error)
     }
     
+});
+
+router.get("/totalFreelancers", async (req, res) => {
+    try {
+        const count = await User.find({utype: "Freelancer", isActive:true, isDeleted:false}).countDocuments();
+        res.json({count});
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+router.get("/totalSellers", async (req,res) => {
+    try {
+        const count = await User.find({utype: "Seller", isActive:true, isDeleted:false}).countDocuments();
+        res.json({count});
+    } catch (error) {
+        console.error(error);
+    }
 })
 /******* MIDDLEWARE for Super Admin ONLY ********/
 
