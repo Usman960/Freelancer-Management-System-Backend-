@@ -17,14 +17,34 @@ router.get("/project-ratings-reviews", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+router.post("/GiveRatingReview", async (req, res) => {
+  try {
+    const projectId = req.body.ProjectId;
+    const sellerId = req.user.userId;
+    const Review = req.body.review;
+    const Rating = req.body.rating;
+    const project = await Project.findOne({_id:projectId,sellerId:sellerId,isDeleted:false}).populate("sellerId", "username");
+
+
+    project.rating = Rating;
+    project.review = Review;
+
+    await project.save();
+    res.json({msg:"Rating and Review Added"});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 // Endpoint to get average rating of a freelancer
-router.get("/freelancer-average-rating/:freelancerId", async (req, res) => {
+router.get("/freelancer-average-rating", async (req, res) => {
   try {
-    const freelancerId = req.body.freelancerId;
+    const freelancerId = req.user.userId;
 
     // Find all projects associated with the freelancer
-    const projects = await Project.find({ freelancerId: freelancerId });
+    const projects = await Project.find({ freelancerId: freelancerId,status:'completed' });
 
     // Filter projects that have ratings
     const ratedProjects = projects.filter((project) => project.rating);
@@ -37,7 +57,8 @@ router.get("/freelancer-average-rating/:freelancerId", async (req, res) => {
     const averageRating =
       ratedProjects.length > 0 ? totalRating / ratedProjects.length : 0;
 
-    res.json({ averageRating });
+      let roundedRating = averageRating.toFixed(1);
+    res.json({ averageRating:roundedRating });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });

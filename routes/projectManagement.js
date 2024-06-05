@@ -90,23 +90,7 @@ router.put("/seller/Updateprojects/:projectId", async (req, res) => {
   }
 });
 
-// fetch by projectId
-router.get("/seller/projects/:projectId", async (req, res) => {
-  try {
-    const projectId = req.params.projectId;
 
-    const projectInfo = await project.findById(projectId);
-
-    if (!projectInfo || projectInfo.isDeleted == true) {
-      return res.status(404).json({ error: "Project not found" });
-    }
-
-    res.json(projectInfo);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 
 router.post("/seller/DeleteProject/:projectId", async (req, res) => {
