@@ -61,7 +61,7 @@ router.post("/SearchProjects", async (req, res) => {
             { status: Search }
            
         ],isDeleted:false,status:'notHired'
-    },{_id:0,isDeleted:0}).populate({
+    },{isDeleted:0}).populate({
       path:'sellerId',select: '_id fullName description'}).skip((page-1) * ProjPerPage).limit(ProjPerPage);
 
        res.status(200).json({ data: Allprojects })
@@ -141,7 +141,7 @@ router.post("/Projectbid", async (req, res) => {
       freelancerId
   };
       const project = await Projects.findOne({_id:projectId, isDeleted: false});
-
+      console.log(project);
       if (!project) {
         return res.status(404).json({ msg: "Project not found!" });
       }
@@ -336,6 +336,7 @@ router.post("/HireFreelancer", async (req, res) => {
      return res.status(404).json({ error: "No project found" });
 
  }  
+ 
 
    project.freelancerId = freelancerID;
    project.status = "pending";
